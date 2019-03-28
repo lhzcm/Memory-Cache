@@ -1,6 +1,5 @@
 #include<stdio.h>
-#include"../include/socket.h"
-#include"../include/command.h"
+#include"socket.h"
 
 int main(int argc, char* argv[])
 {
@@ -112,7 +111,7 @@ void recevice(SocketContent* sc)
 			{
 				temp->data[ret] = 0x00;
 				//数据接收完成
-				//code=command_exec(revData);
+				code=command_exec(revData);
 				//printfData(revData);
 				//发送数据
 				//send(sc->sClient, sendData, strlen(sendData), 0);

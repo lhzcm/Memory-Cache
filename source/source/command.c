@@ -1,7 +1,7 @@
-#include <stdio.h>
-#include "../include/command.h"
+#include <string.h>
+#include"command.h"
 
-
+static char* command_all[4]={"INSERT","DELETE","UPDATE","GET"};
 void command_read(RevData* data,char* command)
 {
 	int i=0;
@@ -18,19 +18,17 @@ void command_read(RevData* data,char* command)
 }
 int command_find(char* command)
 {
-	char* p1;
-	char* p2;
-	int i;
+	char *p1,*p2;
+	int i,temp=-1,temp1,count=0;
 	for(i=0;i<4;i++)
 	{
-		p1=commands[i];
+		p1=command_all[i];
 		p2=command;
-		if(*p2==0x00)
-			return -1;
-		while(*(p1-1)!=0x00)
+		if(strlen(p2)>strlen(p1))
+			continue;
+		temp1=count++;
+		while(*p2!=0x00)
 		{
-			if(*p2==0x00)
-				return i;
 			if(*p1==*p2)
 			{
 				p1++;
@@ -38,12 +36,19 @@ int command_find(char* command)
 				continue;
 			}
 			else
+			{
+				count--;
 				break;
+			}
+		}
+		if(count>temp1)
+		{
+			temp=i;
 		}
 	}
-	return -1;
+	return count>1?-1:temp;
 }
-Code command_execu(RevData* data)
+Code command_exec(RevData* data)
 {
 	int i;
 	char command[10];
@@ -53,27 +58,23 @@ Code command_execu(RevData* data)
 	{
 	case 0:
 		{
-			printf("insert");
 			return insert(data);
 		}
 	case 1:
 		{
-			printf("delete");
-			return code_500;
+			return insert(data);
 		}
 	case 2:
 		{
-			printf("update");
-			return code_500;
+			return insert(data);
 		}
 	case 3:
 		{
-			printf("get");
-			return code_500;
+			return insert(data);
 		}
 	default:
 		{
-			return code_500;
+			return insert(data);
 		}
 	}
 }

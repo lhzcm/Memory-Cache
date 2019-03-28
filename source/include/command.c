@@ -23,7 +23,7 @@ int command_find(char* command)
 	int i;
 	for(i=0;i<4;i++)
 	{
-		p1=commands[i];
+		p1=command_all[i];
 		p2=command;
 		if(*p2==0x00)
 			return -1;

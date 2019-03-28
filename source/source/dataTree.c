@@ -1,5 +1,5 @@
 #include<stdio.h>
-#include "../include/dataTree.h"
+#include "dataTree.h"
 /*int main()
 {*/
 	/*****TEST1*****/
@@ -190,7 +190,7 @@ dataTree* create_node(unsigned int key,dataTree* left,dataTree* right,RevData* n
 	node->expire=timeExpire;
 	return node;
 }
-dataTree* insert_by_node(dataTree* node,dataTree* insertNode)
+dataTree* insert_by_node(dataTree* node,dataTree* insertNode,int* code)
 {
 	if(node==NULL)
 	{
@@ -198,7 +198,7 @@ dataTree* insert_by_node(dataTree* node,dataTree* insertNode)
 	}
 	else if(node->key>insertNode->key)
 	{
-		node->left=insert_by_node(node->left,insertNode);
+		node->left=insert_by_node(node->left,insertNode,code);
 		if((get_height(node->left)-get_height(node->right))==2)
 		{
 			if(node->left->key>insertNode->key)
@@ -213,7 +213,7 @@ dataTree* insert_by_node(dataTree* node,dataTree* insertNode)
 	}
 	else if(node->key<insertNode->key)
 	{
-		node->right=insert_by_node(node->right,insertNode);
+		node->right=insert_by_node(node->right,insertNode,code);
 		if((get_height(node->right)-get_height(node->left))==2)
 		{
 			if(node->right->key<insertNode->key)
@@ -228,7 +228,7 @@ dataTree* insert_by_node(dataTree* node,dataTree* insertNode)
 	}
 	else
 	{
-		printf("not allow insert same key");
+		*code=-1;
 	}
 	node->height=max_value(get_height(node->left),get_height(node->right))+1;
 	return node;
