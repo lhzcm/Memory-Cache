@@ -1,0 +1,25 @@
+<html>
+<body>
+<pre>
+<h1>Build Log</h1>
+<h3>
+--------------------Configuration: dataTree - Win32 Debug--------------------
+</h3>
+<h3>Command Lines</h3>
+Creating temporary file "C:\Users\LHZ\AppData\Local\Temp\RSP2F9F.tmp" with contents
+[
+/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"Debug/dataTree.pch" /YX /Fo"Debug/" /Fd"Debug/" /FD /GZ /c 
+"D:\c”Ô—‘\memorycache\Memory-Cache\source\source\dataTree.c"
+]
+Creating command line "cl.exe @C:\Users\LHZ\AppData\Local\Temp\RSP2F9F.tmp" 
+<h3>Output Window</h3>
+Compiling...
+dataTree.c
+
+
+
+<h3>Results</h3>
+dataTree.obj - 0 error(s), 0 warning(s)
+</pre>
+</body>
+</html>
