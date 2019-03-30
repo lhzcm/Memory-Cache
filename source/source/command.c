@@ -1,7 +1,8 @@
 #include <string.h>
 #include"command.h"
 
-static char* command_all[4]={"INSERT","DELETE","UPDATE","GET"};
+char* command_all[]={"INSERT","DELETE","UPDATETIME","UPDATEDATA","UPDATEALL","GET"};
+
 void command_read(RevData* data,char* command)
 {
 	int i=0;
@@ -20,7 +21,7 @@ int command_find(char* command)
 {
 	char *p1,*p2;
 	int i,temp=-1,temp1,count=0;
-	for(i=0;i<4;i++)
+	for(i=0;i<6;i++)
 	{
 		p1=command_all[i];
 		p2=command;
@@ -58,23 +59,38 @@ Code command_exec(RevData* data)
 	{
 	case 0:
 		{
-			return insert(data);
+			return insert_data(data);
+			break;
 		}
 	case 1:
 		{
-			return insert(data);
+			return delete_data(data);
+			break;
 		}
 	case 2:
 		{
-			return insert(data);
+			return updata_time(data);
+			break;
 		}
 	case 3:
 		{
-			return insert(data);
+			return updata_data(data);
+			break;
+		}
+	case 4:
+		{
+			return updata_all(data);
+			break;
+		}
+	case 5:
+		{
+			return get_data(data);
+			break;
 		}
 	default:
 		{
-			return insert(data);
+			return code_201;
+			break;
 		}
 	}
 }

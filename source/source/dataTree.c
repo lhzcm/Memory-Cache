@@ -174,7 +174,7 @@ dataTree* create_tree(unsigned int key)
 **param:right ÓÒ×ÓÊ÷
 **return ½Úµã
 */
-dataTree* create_node(unsigned int key,dataTree* left,dataTree* right,RevData* nodeData,time_t timeExpire)
+dataTree* create_node(unsigned int key,dataTree* left,dataTree* right,char* data,time_t timeExpire)
 {
 	dataTree* node=(dataTree*)malloc(sizeof(dataTree));
 	if(node==NULL)
@@ -186,11 +186,11 @@ dataTree* create_node(unsigned int key,dataTree* left,dataTree* right,RevData* n
 	node->height=0;
 	node->left=left;
 	node->right=right;
-	node->data=nodeData;
+	node->data=data;
 	node->expire=timeExpire;
 	return node;
 }
-dataTree* insert_by_node(dataTree* node,dataTree* insertNode,int* code)
+dataTree* insert_by_node(dataTree* node,dataTree* insertNode)
 {
 	if(node==NULL)
 	{
@@ -198,7 +198,7 @@ dataTree* insert_by_node(dataTree* node,dataTree* insertNode,int* code)
 	}
 	else if(node->key>insertNode->key)
 	{
-		node->left=insert_by_node(node->left,insertNode,code);
+		node->left=insert_by_node(node->left,insertNode);
 		if((get_height(node->left)-get_height(node->right))==2)
 		{
 			if(node->left->key>insertNode->key)
@@ -213,7 +213,7 @@ dataTree* insert_by_node(dataTree* node,dataTree* insertNode,int* code)
 	}
 	else if(node->key<insertNode->key)
 	{
-		node->right=insert_by_node(node->right,insertNode,code);
+		node->right=insert_by_node(node->right,insertNode);
 		if((get_height(node->right)-get_height(node->left))==2)
 		{
 			if(node->right->key<insertNode->key)
@@ -228,21 +228,22 @@ dataTree* insert_by_node(dataTree* node,dataTree* insertNode,int* code)
 	}
 	else
 	{
-		*code=-1;
+		printf("has same key!\n");
 	}
 	node->height=max_value(get_height(node->left),get_height(node->right))+1;
 	return node;
 }
-dataTree* delete_by_key(dataTree* node,unsigned int key)
+dataTree* delete_by_key(dataTree* node,unsigned int key,int* errorcode)
 {
 	if(node==NULL)
 	{
 		printf("not found the node which key is:%d\n",key);
+		*errorcode=-1;
 		return NULL;
 	}
 	if(node->key>key)
 	{
-		node->left=delete_by_key(node->left,key);
+		node->left=delete_by_key(node->left,key,errorcode);
 		if(get_height(node->right)-get_height(node->left)==2)
 			if(get_height(node->right->right)>=get_height(node->right->left))
 				node=rr_rotation(node);
@@ -251,7 +252,7 @@ dataTree* delete_by_key(dataTree* node,unsigned int key)
 	}
 	else if(node->key<key)
 	{
-		node->right=delete_by_key(node->right,key);
+		node->right=delete_by_key(node->right,key,errorcode);
 		if(get_height(node->left)-get_height(node->right)==2)
 			if(get_height(node->left->left)>=get_height(node->left->right))
 				node=ll_rotation(node);
@@ -261,7 +262,12 @@ dataTree* delete_by_key(dataTree* node,unsigned int key)
 	else
 	{
 		if(node->height==0)
+		{
+			free(node->data);
+			free(node);
+			*errorcode=1;
 			return NULL;
+		}
 		if(get_height(node->left)>get_height(node->right))
 		{
 			AVL_TREE_TEMP->left=left_to_top(node->left);
@@ -275,6 +281,7 @@ dataTree* delete_by_key(dataTree* node,unsigned int key)
 		free(node->data);
 		free(node);
 		node=AVL_TREE_TEMP;
+		*errorcode=1;
 	}
 	node->height=max_value(get_height(node->left),get_height(node->right))+1;
 	return node;
@@ -353,4 +360,25 @@ void traverse(dataTree* node)
 	traverse(node->left);
 	printf("%c\n",*node->data);
 	traverse(node->right);
+}
+
+
+dataTree* get_by_key(dataTree* tree,unsigned key)
+{
+	if(tree==NULL)
+	{
+		return NULL;
+	}
+	if(tree->key>key)
+	{
+		return get_by_key(tree->left,key);
+	}
+	else if(tree->key<key)
+	{
+		return get_by_key(tree->right,key);
+	}
+	else 
+	{
+		return tree;
+	}
 }

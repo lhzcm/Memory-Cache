@@ -1,7 +1,9 @@
 #include<stdio.h>
+#include<math.h>
 #include"socket.h"
 
-int main(int argc, char* argv[])
+//int inniti_socket()
+int main()
 {
 	//初始化WSA
 	WORD sockVersion = MAKEWORD(2, 2);
@@ -15,7 +17,7 @@ int main(int argc, char* argv[])
 	SocketContent* socketcontent;
 	if (WSAStartup(sockVersion, &wsaData) != 0)
 	{
-		return 0;
+		return -1;
 	}
  
 	//创建套接字
@@ -23,18 +25,14 @@ int main(int argc, char* argv[])
 	if (slisten == INVALID_SOCKET)
 	{
 		printf("socket error !");
-		return 0;
+		return -1;
 	}
  
 	//绑定IP和端口
 	
 	sin.sin_family = AF_INET;
-	sin.sin_port = htons(8888);
-	//sin.sin_addr.S_un.S_addr = INADDR_ANY;
-	sin.sin_addr.S_un.S_un_b.s_b1=192;
-	sin.sin_addr.S_un.S_un_b.s_b2=168;
-	sin.sin_addr.S_un.S_un_b.s_b3=1;
-	sin.sin_addr.S_un.S_un_b.s_b4=101;
+	sin.sin_port = htons(LiSTEN_POINT);
+	sin.sin_addr.S_un.S_addr = INADDR_ANY;
 	if (bind(slisten, (LPSOCKADDR)&sin, sizeof(sin)) == SOCKET_ERROR)
 	{
 		printf("bind error !");
@@ -44,7 +42,7 @@ int main(int argc, char* argv[])
 	if (listen(slisten, 5) == SOCKET_ERROR)
 	{
 		printf("listen error !");
-		return 0;
+		return -1;
 	}
  
 	//循环接收数据
@@ -52,8 +50,13 @@ int main(int argc, char* argv[])
 	printf("等待连接...\n");
 	while(true)
 	{
-		sClient = accept(slisten, (SOCKADDR *)&remoteAddr, &nAddrlen);//等待连接（会阻塞）
+		sClient = accept(slisten, (SOCKADDR *)&remoteAddr, &nAddrlen);//等待连接（阻塞）
 		socketcontent=(SocketContent*)malloc(sizeof(SocketContent));
+		if(socketcontent==NULL)
+		{
+			printf("Memory allocation failed!");
+			return -1;
+		}
 		socketcontent->sClient=sClient;
 		socketcontent->nAddrlen=nAddrlen;
 		socketcontent->remoteAddr=remoteAddr;
@@ -67,20 +70,29 @@ int main(int argc, char* argv[])
 void recevice(SocketContent* sc)
 {
 	int ret,point=0;
-	char endMark=';';
 	RevData* temp,*revData;
-	char * sendData = "{\"Code\":\"200\";\"Msg\":\"Connection Successful!\"}";
 	Code code;
-	revData=(RevData*)malloc(sizeof(RevData));
-	revData->next=NULL;
-	temp=revData;
 	if (sc->sClient == INVALID_SOCKET)
 	{
-		printf("accept error !");
+		printf("accept error !\n");
+		free(sc);
 		return;
 	}
+	revData=(RevData*)malloc(sizeof(RevData));
+	if(revData==NULL)
+	{
+		printf("memory malloc error!\n");
+		closesocket(sc->sClient);
+		free(sc);
+		return;
+	}
+	revData->next=NULL;
+	temp=revData;
 	//发送数据
-	send(sc->sClient, sendData, strlen(sendData), 0);
+	if(sendmessage(sc->sClient,code_201)<0)
+	{
+		printf("send error!\n");
+	}
 	while (true)
 	{
 		//接收数据
@@ -90,13 +102,30 @@ void recevice(SocketContent* sc)
 		{
 			if(endMark==temp->data[revData_len-1])
 			{
+				/*
 				temp->next=(RevData*)malloc(sizeof(RevData));
 				temp=temp->next;
 				temp->next=NULL;
 				temp->data[0]=0x00;
-				printfData(revData);
+				*/
+				//printfData(revData);
+				//数据接收完成
+				code=command_exec(revData);
 				//发送数据
-				send(sc->sClient, sendData, strlen(sendData), 0);
+				if(sendmessage(sc->sClient,code)<0)
+				{
+					printf("send error!");
+				}
+				revData=(RevData*)malloc(sizeof(RevData));
+				if(revData==NULL)
+				{
+					printf("memory malloc error!\n");
+					closesocket(sc->sClient);
+					free(sc);
+					return;
+				}
+				revData->next=NULL;
+				temp=revData;
 			}
 			else
 			{
@@ -109,13 +138,26 @@ void recevice(SocketContent* sc)
 		{
 			if(endMark==temp->data[ret-1])
 			{
-				temp->data[ret] = 0x00;
+				//temp->data[ret] = 0x00;
+				//printfData(revData);
 				//数据接收完成
 				code=command_exec(revData);
+				//发送数据
+				sendmessage(sc->sClient,code);
 				//printfData(revData);
 				//发送数据
 				//send(sc->sClient, sendData, strlen(sendData), 0);
 				point=0;
+				revData=(RevData*)malloc(sizeof(RevData));
+				if(revData==NULL)
+				{
+					printf("memory malloc error!");
+					closesocket(sc->sClient);
+					free(sc);
+					return;
+				}
+				revData->next=NULL;
+				temp=revData;
 			}
 			else
 			{
@@ -156,10 +198,62 @@ void printfData(RevData* data)
 			{
 				if(data->data[i]==0x00)
 				{
+					printf("\n");
 					return;
 				}
 				printf("%c",data->data[i]);
 			}
 			data=data->next;
 		}
+}
+
+int send_code(SOCKET sClient,Code code)
+{
+	int len;
+	char codestr[100];
+	len=sprintf(codestr,code_template,code.code,code.key,NULL_CHAR,code.msg);
+	if(len<0)
+	{
+		return -1;
+	}
+	else
+	{
+		send(sClient,codestr,len,0);
+	}
+	return 0;
+}
+int send_data(SOCKET sClent,Code code)
+{
+	int datalen=strlen(code.data),senddatalen,i,count;
+	char* senddata;
+	if(datalen<0)
+	{
+		return -1;
+	}
+	senddata=(char*)malloc((44+datalen)*sizeof(char));
+	if(senddata==NULL)
+	{
+		return -1;
+	}
+	senddatalen=sprintf(senddata,code_template,code.code,code.key,code.data,NULL_CHAR);
+	if(senddatalen<0)
+	{
+		return -1;
+	}
+	count=(int)ceil(1.0*senddatalen/SEND_MAX);
+	for(i=0;i<count-1;i++)
+	{
+		send(sClent,senddata,SEND_MAX,i*SEND_MAX);
+	}
+	send(sClent,senddata,senddatalen-i*SEND_MAX,i*SEND_MAX);
+	free(senddata);
+	return senddatalen;
+	
+}
+int sendmessage(SOCKET sClient,Code code)
+{
+	if(code.data==NULL)
+		return send_code(sClient,code);
+	else
+		return send_data(sClient,code);
 }
