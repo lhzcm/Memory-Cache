@@ -1,7 +1,109 @@
 #include<stdio.h>
 #include "dataTree.h"
+/*int main()
+{*/
+	/*****TEST1*****/
+	/*
+	int i;
+	int arry[10]={12,34,45,23,3,675,13,9,100,66};
+	dataTree* tree = create_node(1,NULL,NULL);
+	for(i=0;i<10;i++)
+	{
+		tree=insert_by_key(tree,arry[i]);
+	}
+	traverse(tree);
+	delete_by_key(tree,45);
+	delete_by_key(tree,3);
+	delete_by_key(tree,9);
+	delete_by_key(tree,100);
+	delete_by_key(tree,13);
+	delete_by_key(tree,66);
+	traverse(tree);
+	*/
+	/****TEST2****/
+	/*
+	int i;
+	int arry[6]={2,6,1,3,7,4};
+	dataTree* tree = create_node(5,NULL,NULL);
+	for(i=0;i<6;i++)
+	{
+		tree=insert_by_key(tree,arry[i]);
+	}
+	traverse(tree);
+	tree=delete_by_key(tree,7);
+	traverse(tree);
+	*/
+	/****TEST3****/
+	/*
+	int i;
+	int arry[12]={8,5,11,2,7,10,12,1,3,6,9,4};
+	dataTree* tree = create_node(5,NULL,NULL);
+	for(i=0;i<12;i++)
+	{
+		tree=insert_by_key(tree,arry[i]);
+	}
+	traverse(tree);
+	tree=delete_by_key(tree,8);
+	traverse(tree);
+	*/
+	/****TEST4****/
+	/*
+	int length=100,i;
+	clock_t start,end;
+	time_t thistime;
+	dataTree* tree = NULL;
+	start=clock();
+	for(i=1;i<=length;i++)
+	{
+		tree=insert_by_key(tree,i);
+	}
+	end=clock();
+	printf("%d\n",end-start);
 
-pthread_mutex_t malloc_free_mutex=PTHREAD_MUTEX_INITIALIZER; //malloc and free_mutex
+	start=clock();
+	for(i=99;i>3;i--)
+	{
+		tree=delete_by_key(tree,i);
+	}
+	end=clock();
+	printf("%d\n",end-start);
+	for(i=99;i>3;i--)
+	{
+		tree=insert_by_key(tree,i);
+	}
+	traverse(tree);
+	time(&thistime);
+	printf("%ld",thistime);
+	*//*
+	char* testdata;
+	int length=100;
+	unsigned i;
+	clock_t start,end;
+	time_t thistime;
+	dataTree* tree = NULL;
+	start=clock();
+	for(i=1;i<=10;i++)
+	{
+		testdata=(char*)malloc(sizeof(char));
+		scanf("%c",testdata);
+		tree=insert_by_node(tree,create_node(i,NULL,NULL,testdata,19951009));
+	}
+	end=clock();
+	printf("%d\n",end-start);
+	traverse(tree);
+
+	start=clock();
+	for(i=10;i>0;i--)
+	{
+		tree=delete_by_key(tree,i);
+	}
+	end=clock();
+	printf("%d\n",end-start);
+	traverse(tree);
+	time(&thistime);
+	printf("%ld",thistime);
+
+}*/
 
 /*
 **右右型左旋
@@ -54,7 +156,7 @@ dataTree* rl_rotation(dataTree* node)
 
 dataTree* create_tree(unsigned int key)
 {	
-	dataTree* tree=(dataTree*)malloc_safe(sizeof(dataTree));
+	dataTree* tree=(dataTree*)malloc(sizeof(dataTree));
 	if(tree==NULL)
 	{
 		printf("Memory allocation failed!");
@@ -74,7 +176,7 @@ dataTree* create_tree(unsigned int key)
 */
 dataTree* create_node(unsigned int key,dataTree* left,dataTree* right,char* data,time_t timeExpire)
 {
-	dataTree* node=(dataTree*)malloc_safe(sizeof(dataTree));
+	dataTree* node=(dataTree*)malloc(sizeof(dataTree));
 	if(node==NULL)
 	{
 		printf("Memory allocation failed!");
@@ -131,8 +233,6 @@ dataTree* insert_by_node(dataTree* node,dataTree* insertNode)
 	node->height=max_value(get_height(node->left),get_height(node->right))+1;
 	return node;
 }
-
-//通过key来删除节点
 dataTree* delete_by_key(dataTree* node,unsigned int key,int* errorcode)
 {
 	if(node==NULL)
@@ -163,8 +263,8 @@ dataTree* delete_by_key(dataTree* node,unsigned int key,int* errorcode)
 	{
 		if(node->height==0)
 		{
-			free_safe(node->data);
-			free_safe(node);
+			free(node->data);
+			free(node);
 			*errorcode=1;
 			return NULL;
 		}
@@ -178,8 +278,8 @@ dataTree* delete_by_key(dataTree* node,unsigned int key,int* errorcode)
 			AVL_TREE_TEMP->right=right_to_top(node->right);
 			AVL_TREE_TEMP->left=node->left;
 		}
-		free_safe(node->data);
-		free_safe(node);
+		free(node->data);
+		free(node);
 		node=AVL_TREE_TEMP;
 		*errorcode=1;
 	}
@@ -262,41 +362,23 @@ void traverse(dataTree* node)
 	traverse(node->right);
 }
 
-//通过key来获取节点
+
 dataTree* get_by_key(dataTree* tree,unsigned key)
 {
-	while(tree!=NULL)
+	if(tree==NULL)
 	{
-		if(tree->key>key)
-		{
-			tree=tree->left;
-			continue;
-		}
-		else if(tree->key<key)
-		{
-			tree=tree->right;
-			continue;
-		}
-		else
-		{
-			return tree;
-		}	
+		return NULL;
 	}
-	return NULL;
-}
-//malloc时加上互斥锁来保证malloc时的线程安全
-void* malloc_safe(unsigned int size)
-{
-	void* position;
-	pthread_mutex_lock(&malloc_free_mutex);
-	position = malloc(size);
-	pthread_mutex_unlock(&malloc_free_mutex);
-	return position;
-}
-//free时加上互斥锁来保证free时的线程安全
-void free_safe(void* target)
-{
-	pthread_mutex_lock(&malloc_free_mutex);
-	free(target);
-	pthread_mutex_unlock(&malloc_free_mutex);
+	if(tree->key>key)
+	{
+		return get_by_key(tree->left,key);
+	}
+	else if(tree->key<key)
+	{
+		return get_by_key(tree->right,key);
+	}
+	else 
+	{
+		return tree;
+	}
 }

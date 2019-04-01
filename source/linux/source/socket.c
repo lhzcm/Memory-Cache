@@ -5,6 +5,7 @@
 //int inniti_socket()
 extern sem_t sem;
 extern int threadnum;
+
 int main()
 {
 
@@ -19,7 +20,7 @@ int main()
 	pthread_t tid;
 	SocketContent* socketcontent;
 	//innit sem
-	threadnum=6;
+	threadnum=2;
 	sem_init(&sem,0,threadnum);
 	if (WSAStartup(sockVersion, &wsaData) != 0)
 	{
@@ -57,7 +58,7 @@ int main()
 	while(true)
 	{
 		sClient = accept(slisten, (SOCKADDR *)&remoteAddr, &nAddrlen);//等待连接（阻塞）
-		socketcontent=(SocketContent*)malloc_safe(sizeof(SocketContent));
+		socketcontent=(SocketContent*)malloc(sizeof(SocketContent));
 		if(socketcontent==NULL)
 		{
 			printf("Memory allocation failed!");
@@ -81,15 +82,15 @@ void recevice(SocketContent* sc)
 	if (sc->sClient == INVALID_SOCKET)
 	{
 		printf("accept error !\n");
-		free_safe(sc);
+		free(sc);
 		return;
 	}
-	revData=(RevData*)malloc_safe(sizeof(RevData));
+	revData=(RevData*)malloc(sizeof(RevData));
 	if(revData==NULL)
 	{
 		printf("memory malloc error!\n");
 		closesocket(sc->sClient);
-		free_safe(sc);
+		free(sc);
 		return;
 	}
 	revData->next=NULL;
@@ -118,16 +119,16 @@ void recevice(SocketContent* sc)
 				//数据接收完成
 				code=command_exec(revData);
 				//发送数据
-				if(sendmessage(sc->sClient,code)<0)
+				/*if(sendmessage(sc->sClient,code)<0)
 				{
 					printf("send error!");
-				}
-				revData=(RevData*)malloc_safe(sizeof(RevData));
+				}*/
+				revData=(RevData*)malloc(sizeof(RevData));
 				if(revData==NULL)
 				{
 					printf("memory malloc error!\n");
 					closesocket(sc->sClient);
-					free_safe(sc);
+					free(sc);
 					return;
 				}
 				revData->next=NULL;
@@ -135,12 +136,12 @@ void recevice(SocketContent* sc)
 			}
 			else
 			{
-				temp->next=(RevData*)malloc_safe(sizeof(RevData));
+				temp->next=(RevData*)malloc(sizeof(RevData));
 				if(temp->next==NULL)
 				{
 					printf("memory malloc error!\n");
 					closesocket(sc->sClient);
-					free_safe(sc);
+					free(sc);
 					return;
 				}
 				temp=temp->next;
@@ -156,20 +157,20 @@ void recevice(SocketContent* sc)
 				//数据接收完成
 				code=command_exec(revData);
 				//发送数据
-				if(sendmessage(sc->sClient,code)<0)
+				/*if(sendmessage(sc->sClient,code)<0)
 				{
 					printf("send error!");
-				}
+				}*/
 				//printfData(revData);
 				//发送数据
 				//send(sc->sClient, sendData, strlen(sendData), 0);
 				point=0;
-				revData=(RevData*)malloc_safe(sizeof(RevData));
+				revData=(RevData*)malloc(sizeof(RevData));
 				if(revData==NULL)
 				{
 					printf("memory malloc error!");
 					closesocket(sc->sClient);
-					free_safe(sc);
+					free(sc);
 					return;
 				}
 				revData->next=NULL;
@@ -180,7 +181,7 @@ void recevice(SocketContent* sc)
 				point+=ret;
 				if(point==revData_len)
 				{
-					temp->next=(RevData*)malloc_safe(sizeof(RevData));
+					temp->next=(RevData*)malloc(sizeof(RevData));
 					temp=temp->next;
 					temp->next=NULL;
 				}
@@ -193,7 +194,7 @@ void recevice(SocketContent* sc)
 		}
 	}
 	closesocket(sc->sClient);
-	free_safe(sc);
+	free(sc);
 }
 void freeMemory(RevData* data)
 {
@@ -201,7 +202,7 @@ void freeMemory(RevData* data)
 	while(data!=NULL)
 	{
 		temp=data->next;
-		free_safe(data);
+		free(data);
 		data=temp;
 	}
 }
@@ -246,7 +247,7 @@ int send_data(SOCKET sClent,Code code)
 	{
 		return -1;
 	}
-	senddata=(char*)malloc_safe((100+datalen+strlen(code.msg))*sizeof(char));
+	senddata=(char*)malloc((100+datalen+strlen(code.msg))*sizeof(char));
 	if(senddata==NULL)
 	{
 		return -1;
@@ -262,7 +263,7 @@ int send_data(SOCKET sClent,Code code)
 		send(sClent,senddata,SEND_MAX,i*SEND_MAX);
 	}
 	send(sClent,senddata,senddatalen-i*SEND_MAX,i*SEND_MAX);
-	free_safe(senddata);
+	free(senddata);
 	return senddatalen;
 	
 }

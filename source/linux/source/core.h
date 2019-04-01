@@ -1,16 +1,19 @@
 #include <time.h>
-#include<semaphore.h>
+#include <pthread.h>
+#include <semaphore.h>
 #include "code.h"
 #include "dataTree.h"
 
 #ifndef _CORE_H_
 #define _CORE_H_
-#define revData_len 128
+#define revData_len 256
 typedef struct RevData
 {
 	char data[revData_len];
 	struct RevData* next;
 }RevData;
+
+
 int get_RevData_len(RevData* data,int position);
 int RevDataToChar(RevData* data,char** chardata,int positio);
 void free_RevData(RevData* data);

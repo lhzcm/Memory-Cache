@@ -27,9 +27,6 @@ const int numbers[]={0,1,2,3,4,5,6,7,8,9};
 static pthread_mutex_t datatree_mutex=PTHREAD_MUTEX_INITIALIZER;
 sem_t sem;
 int threadnum;
-//extern pthread_mutex_t malloc_free_mutex; //malloc mutex
-//extern pthread_mutex_t free_mutex; //free mutex
-
 
 Code code_inniti(unsigned short codeno,unsigned int key,char* data,char* msg)
 {
@@ -140,7 +137,7 @@ int RevDataToChar(RevData* data,char** chardata,int position)
 	{
 		return -1;
 	}
-	*chardata =(char*)malloc_safe((length+1)*sizeof(char));
+	*chardata =(char*)malloc((length+1)*sizeof(char));
 	if(*chardata==NULL)
 	{
 		printf("memory malloc error!\n");
@@ -179,13 +176,13 @@ void free_RevData(RevData* data)
 	while(data!=NULL)
 	{
 		temp=data->next;
-		free_safe(data);
+		free(data);
 		data=temp;
 	}
 }
 Code insert_data(RevData* data)
 {
-	int i;
+	//int i;
 	char* chardata;
 	dataTree* node;
 	time_t extime=get_time(data,1),nowtime;
@@ -198,18 +195,17 @@ Code insert_data(RevData* data)
 		return code_504;
 	}
 	pthread_mutex_lock(&datatree_mutex);  //添加线程锁
-	for(i=0;i<threadnum;i++)
+	/*for(i=0;i<threadnum;i++)
 	{
 		sem_wait(&sem);
-	}
-	pthread_mutex_unlock(&datatree_mutex);
+	}*/
 	node=create_node(count_node,NULL,NULL,chardata,extime);
 	if(node==NULL)
 	{
-		for(i=0;i<threadnum;i++)
+		/*for(i=0;i<threadnum;i++)
 		{
 			sem_post(&sem);
-		}
+		}*/
 		return code_501;
 	}
 	if(extime>0)
@@ -219,13 +215,13 @@ Code insert_data(RevData* data)
 	}
 	data_tree=insert_by_node(data_tree,node);
 	count_node++;
-	//printf("%d\n",count_node);
-	for(i=0;i<threadnum;i++)
+	printf("%d\n",count_node);
+	/*for(i=0;i<threadnum;i++)
 	{
 		sem_post(&sem);
 	}
-	free_RevData(data);
-	
+	free_RevData(data);*/
+	pthread_mutex_unlock(&datatree_mutex);
 	return code_inniti(200,count_node,NULL,"insert successful!");//添加成功
 }
 Code get_data(RevData* commdata)
@@ -237,11 +233,11 @@ Code get_data(RevData* commdata)
 	{
 		return code_502;
 	}
-	pthread_mutex_lock(&datatree_mutex);  //添加线程锁
-	sem_wait(&sem);
-	pthread_mutex_unlock(&datatree_mutex);
+	//pthread_mutex_lock(&datatree_mutex);  //添加线程锁
+	//sem_wait(&sem);
+	//pthread_mutex_unlock(&datatree_mutex);
 	node=get_by_key(data_tree,key);
-	sem_post(&sem);
+	//sem_post(&sem);
 	if(node==NULL)
 	{
 		return code_404;

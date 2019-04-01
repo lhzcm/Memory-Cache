@@ -1,6 +1,5 @@
 #include<stdlib.h>
 #include<time.h>
-#include<pthread.h>
 
 #ifndef _DATATREE_H_
 #define _DATATREE_H_
@@ -30,9 +29,8 @@ int get_height(dataTree* node);
 int max_value(int first,int second);
 void traverse(dataTree* node);
 dataTree* insert_by_node(dataTree* node,dataTree* insertNode);
+
 dataTree* get_by_key(dataTree* tree,unsigned key);
-void* malloc_safe(unsigned int size);
-void free_safe(void* target);
 
 static unsigned int count_node=1;
 static dataTree* data_tree=NULL;

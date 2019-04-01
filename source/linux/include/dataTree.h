@@ -1,9 +1,6 @@
 #include<stdlib.h>
 #include<time.h>
-#include<pthread.h>
-
-#ifndef _DATATREE_H_
-#define _DATATREE_H_
+//#include"socket.h"
 
 typedef struct dataTree
 {
@@ -11,7 +8,7 @@ typedef struct dataTree
 	struct dataTree *left;
 	struct dataTree *right;
 	int height;
-	char* data;
+	RevData* data;
 	time_t expire;
 }dataTree;
 
@@ -22,18 +19,14 @@ dataTree* ll_rotation(dataTree* node);
 dataTree* lr_rotation(dataTree* node);
 dataTree* rl_rotation(dataTree* node);
 dataTree* create_tree(unsigned int key);
-dataTree* create_node(unsigned int key,dataTree* left,dataTree* right,char* nodeData,time_t timeExpire);
-dataTree* delete_by_key(dataTree* node,unsigned int key,int* errorcode);
+dataTree* create_node(unsigned int key,dataTree* left,dataTree* right,RevData* nodeData,time_t timeExpire);
+dataTree* delete_by_key(dataTree* node,unsigned int key);
 dataTree* left_to_top(dataTree* node);
 dataTree* right_to_top(dataTree* node);
 int get_height(dataTree* node);
 int max_value(int first,int second);
 void traverse(dataTree* node);
 dataTree* insert_by_node(dataTree* node,dataTree* insertNode);
-dataTree* get_by_key(dataTree* tree,unsigned key);
-void* malloc_safe(unsigned int size);
-void free_safe(void* target);
 
-static unsigned int count_node=1;
+static unsigned int count_node=0;
 static dataTree* data_tree=NULL;
-#endif
