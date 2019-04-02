@@ -1,67 +1,284 @@
-#include <stdio.h>
-#include <winsock2.h>
-#pragma comment(lib,"ws2_32.lib")
-
-#define PORT 8888
-#define true 1
-#define false 0
-
-int main()
+#include<stdio.h>
+#include<math.h>
+#include"connection.h"
+extern int Now_Connection;
+extern int Max_Connection;
+char endMark='\0';
+int connection_init(SOCKET* slisten)
 {
-	WORD sockVersion =MAKEWORD(2,2);
+
+	//初始化WSA
+	WORD sockVersion = MAKEWORD(2, 2);
 	WSADATA wsaData;
-	SOCKET slisten;
 	struct sockaddr_in sin;
-	SOCKET sclient;
+	//SOCKET slisten;
+	if (WSAStartup(sockVersion, &wsaData) != 0)
+	{
+		printf("初始化WSA Error!");
+		return -1;
+	}
+ 
+	//创建套接字
+	*slisten = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	if (slisten == INVALID_SOCKET)
+	{
+		printf("socket error !");
+		return -1;
+	}
+ 
+	//绑定IP和端口
+	
+	sin.sin_family = AF_INET;
+	sin.sin_port = htons(LiSTEN_POINT);
+	sin.sin_addr.S_un.S_addr = INADDR_ANY;
+	if (bind(*slisten, (LPSOCKADDR)&sin, sizeof(sin)) == SOCKET_ERROR)
+	{
+		printf("bind error !");
+		return -1;
+	}
+ 
+	//开始监听
+	if (listen(*slisten, 5) == SOCKET_ERROR)
+	{
+		printf("listen error !");
+		return -1;
+	}
+	return 0;
+}
+void start_run(SOCKET slisten)
+{
+	int nAddrlen;
 	struct sockaddr_in remoteAddr;
-	int nAddrlen,ret;
-	char * sendData="200";
-	if(WSAStartup(sockVersion,&wsaData)!=0)
-	{
-		printf("create connection faile!\n");
-		return 0;
-	}
-	slisten = socket(AF_INET,SOCK_STREAM,IPPROTO_TCP);
-	if(slisten==INVALID_SOCKET)
-	{
-		printf("create socket faile!\n");
-		return 0;
-	}
-	sin.sin_family=AF_INET;
-	sin.sin_port = htons(PORT);
-	sin.sin_addr.S_un.S_addr=INADDR_ANY;
-	if(bind(slisten,(LPSOCKADDR)&sin,sizeof(sin))==SOCKET_ERROR)
-	{
-		printf("bind ip address and port faile\n");
-		return 0;
-	}
-	if(listen(slisten,5)==SOCKET_ERROR)
-	{
-		printf("Listen falie!\n");
-		return 0;
-	}
-	nAddrlen=sizeof(remoteAddr);
-	printf("waitting connection!\n");
-	sclient=accept(slisten,(SOCKADDR *)&remoteAddr,&nAddrlen);
+	pthread_t tid;
+	SocketContent* socketcontent;
+	SOCKET sClient;
+	//循环接收数据
+	nAddrlen = sizeof(remoteAddr);
+	printf("等待连接...\n");
 	while(true)
 	{
-		char revData[10];
-		if(sclient==INVALID_SOCKET)
+		sClient = accept(slisten, (SOCKADDR *)&remoteAddr, &nAddrlen);//等待连接（阻塞）
+		socketcontent=(SocketContent*)malloc_safe(sizeof(SocketContent));
+		if(socketcontent==NULL)
 		{
-			printf("Accept faile!\n");
+			printf("Memory allocation failed!\n");
 			continue;
 		}
-		printf("accept a new connection:%s\r\n",inet_ntoa(remoteAddr.sin_addr));
-		ret = recv(sclient,revData,10,0);
-		if(ret>0)
+		else if (sClient == INVALID_SOCKET)
 		{
-			revData[ret]='\0';
-			printf(revData);
+			printf("accept error !\n");
+			free_safe(socketcontent);
+			continue;
 		}
-		send(sclient,sendData,strlen(sendData),0);
+		else if(Now_Connection>Max_Connection)
+		{
+			if(sendmessage(sClient,code_406)<0)
+			{
+				printf("send connection has Max error!\n");
+			}
+			closesocket(sClient);
+			free_safe(socketcontent);
+			continue;
+		}
+		Now_Connection++;
+		socketcontent->sClient=sClient;
+		socketcontent->nAddrlen=nAddrlen;
+		socketcontent->remoteAddr=remoteAddr;
+		pthread_create(&tid,NULL,(void*)recevice,socketcontent);
+		printf("接受到一个连接：%s port:%d \r\n", inet_ntoa(socketcontent->remoteAddr.sin_addr),sClient);
 	}
-	closesocket(sclient);
 	closesocket(slisten);
 	WSACleanup();
+	return; 
+}
+void recevice(SocketContent* sc)
+{
+	int ret,point=0;
+	RevData* temp,*revData;
+	Code code;
+	revData=(RevData*)malloc_safe(sizeof(RevData));
+	if(revData==NULL)
+	{
+		printf("memory malloc error!\n");
+		closesocket(sc->sClient);
+		free_safe(sc);
+		Now_Connection--;
+		return;
+	}
+	revData->next=NULL;
+	temp=revData;
+	//发送数据
+	if(sendmessage(sc->sClient,code_201)<0)
+	{
+		printf("send error!\n");
+	}
+	while (true)
+	{
+		//接收数据
+		ret = recv(sc->sClient, &temp->data[point], revData_len-point, 0);//如果recv在copy时出错，那么它返回SOCKET_ERROR；
+		if(ret==revData_len)
+		{
+			if(endMark==temp->data[revData_len-1])
+			{
+				//数据接收完成
+				code=command_exec(revData);
+				//发送数据
+				if(sendmessage(sc->sClient,code)<0)
+				{
+					printf("send error!");
+				}
+				revData=(RevData*)malloc_safe(sizeof(RevData));
+				if(revData==NULL)
+				{
+					printf("memory malloc error!\n");
+					closesocket(sc->sClient);
+					free_safe(sc);
+					Now_Connection--;
+					return;
+				}
+				revData->next=NULL;
+				temp=revData;
+			}
+			else
+			{
+				temp->next=(RevData*)malloc_safe(sizeof(RevData));
+				if(temp->next==NULL)
+				{
+					printf("memory malloc error!\n");
+					closesocket(sc->sClient);
+					free_safe(sc);
+					Now_Connection--;
+					return;
+				}
+				temp=temp->next;
+				temp->next=NULL;
+			}	
+		}
+		else if(ret>0)
+		{
+			if(endMark==temp->data[ret-1])
+			{
+				//temp->data[ret] = 0x00;
+				//printfData(revData);
+				//数据接收完成
+				code=command_exec(revData);
+				//发送数据
+				if(sendmessage(sc->sClient,code)<0)
+				{
+					printf("send error!");
+				}
+				//printfData(revData);
+				//发送数据
+				//send(sc->sClient, sendData, strlen(sendData), 0);
+				point=0;
+				revData=(RevData*)malloc_safe(sizeof(RevData));
+				if(revData==NULL)
+				{
+					printf("memory malloc error!");
+					closesocket(sc->sClient);
+					free_safe(sc);
+					Now_Connection--;
+					return;
+				}
+				revData->next=NULL;
+				temp=revData;
+			}
+			else
+			{
+				point+=ret;
+				if(point==revData_len)
+				{
+					temp->next=(RevData*)malloc_safe(sizeof(RevData));
+					temp=temp->next;
+					temp->next=NULL;
+				}
+			}
+		}
+		else
+		{
+			printf("断开连接：%s \r\n", inet_ntoa(sc->remoteAddr.sin_addr));
+			Now_Connection--;
+			return;
+		}
+	}
+	closesocket(sc->sClient);
+	free_safe(sc);
+}
+void freeMemory(RevData* data)
+{
+	RevData* temp;
+	while(data!=NULL)
+	{
+		temp=data->next;
+		free_safe(data);
+		data=temp;
+	}
+}
+void printfData(RevData* data)
+{
+	int i;
+	while(data!=NULL)
+		{
+			for(i=0;i<revData_len;i++)
+			{
+				if(data->data[i]==0x00)
+				{
+					printf("\n");
+					return;
+				}
+				printf("%c",data->data[i]);
+			}
+			data=data->next;
+		}
+}
+
+int send_code(SOCKET sClient,Code code)
+{
+	int len;
+	char codestr[100];
+	len=sprintf(codestr,code_template,code.code,code.key,NULL_CHAR,code.msg);
+	if(len<0)
+	{
+		return -1;
+	}
+	else
+	{
+		send(sClient,codestr,len,0);
+	}
 	return 0;
+}
+int send_data(SOCKET sClent,Code code)
+{
+	int datalen=strlen(code.data),senddatalen,i,count;
+	char* senddata;
+	if(datalen<0)
+	{
+		return -1;
+	}
+	senddata=(char*)malloc_safe((100+datalen+strlen(code.msg))*sizeof(char));
+	if(senddata==NULL)
+	{
+		return -1;
+	}
+	senddatalen=sprintf(senddata,code_template,code.code,code.key,code.data,code.msg);
+	if(senddatalen<0)
+	{
+		return -1;
+	}
+	count=(int)ceil(1.0*senddatalen/SEND_MAX);
+	for(i=0;i<count-1;i++)
+	{
+		send(sClent,senddata,SEND_MAX,i*SEND_MAX);
+	}
+	send(sClent,senddata,senddatalen-i*SEND_MAX,i*SEND_MAX);
+	free_safe(senddata);
+	return senddatalen;
+	
+}
+int sendmessage(SOCKET sClient,Code code)
+{
+	if(code.data==NULL)
+		return send_code(sClient,code);
+	else
+		return send_data(sClient,code);
 }

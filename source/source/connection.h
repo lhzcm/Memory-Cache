@@ -26,7 +26,6 @@ void freeMemory(RevData* data);
 void printfData(RevData* data);
 int sendmessage(SOCKET sClient,Code code);
 int connection_init();
-
-char endMark='\0';
+void start_run(SOCKET slisten);
 
 #endif

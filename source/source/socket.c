@@ -3,9 +3,9 @@
 #include"socket.h"
 
 //int inniti_socket()
-extern sem_t sem;
-extern int threadnum;
-int main()
+//extern sem_t sem;
+//extern int threadnum;
+int connection_init()
 {
 
 	//≥ı ºªØWSA
@@ -18,8 +18,6 @@ int main()
 	int nAddrlen;
 	pthread_t tid;
 	SocketContent* socketcontent;
-	//innit sem
-	threadnum=6;
 	sem_init(&sem,0,threadnum);
 	if (WSAStartup(sockVersion, &wsaData) != 0)
 	{

@@ -185,7 +185,6 @@ void free_RevData(RevData* data)
 }
 Code insert_data(RevData* data)
 {
-	int i;
 	char* chardata;
 	dataTree* node;
 	time_t extime=get_time(data,1),nowtime;
@@ -198,18 +197,17 @@ Code insert_data(RevData* data)
 		return code_504;
 	}
 	pthread_mutex_lock(&datatree_mutex);  //添加线程锁
-	for(i=0;i<threadnum;i++)
-	{
-		sem_wait(&sem);
-	}
-	pthread_mutex_unlock(&datatree_mutex);
+	//for(i=0;i<threadnum;i++)
+	//{
+		//sem_wait(&sem);
+	//}
 	node=create_node(count_node,NULL,NULL,chardata,extime);
 	if(node==NULL)
 	{
-		for(i=0;i<threadnum;i++)
-		{
-			sem_post(&sem);
-		}
+		//for(i=0;i<threadnum;i++)
+		//{
+			//sem_post(&sem);
+		//}
 		return code_501;
 	}
 	if(extime>0)
@@ -219,11 +217,12 @@ Code insert_data(RevData* data)
 	}
 	data_tree=insert_by_node(data_tree,node);
 	count_node++;
+	pthread_mutex_unlock(&datatree_mutex);
 	//printf("%d\n",count_node);
-	for(i=0;i<threadnum;i++)
-	{
-		sem_post(&sem);
-	}
+	//for(i=0;i<threadnum;i++)
+	//{
+		//sem_post(&sem);
+	//}
 	free_RevData(data);
 	
 	return code_inniti(200,count_node,NULL,"insert successful!");//添加成功
@@ -237,13 +236,12 @@ Code get_data(RevData* commdata)
 	{
 		return code_502;
 	}
-	pthread_mutex_lock(&datatree_mutex);  //添加线程锁
-	sem_wait(&sem);
-	pthread_mutex_unlock(&datatree_mutex);
+	//sem_wait(&sem);
 	node=get_by_key(data_tree,key);
-	sem_post(&sem);
+	//sem_post(&sem);
 	if(node==NULL)
 	{
+		printf("%d=404\n",key);
 		return code_404;
 	}
 	free_RevData(commdata);
