@@ -4,6 +4,7 @@
 extern int Now_Connection;
 extern int Max_Connection;
 char endMark='\0';
+pthread_mutex_t connection_mutex=PTHREAD_MUTEX_INITIALIZER;
 int connection_init(SOCKET* slisten)
 {
 
@@ -70,7 +71,7 @@ void start_run(SOCKET slisten)
 			free_safe(socketcontent);
 			continue;
 		}
-		else if(Now_Connection>Max_Connection)
+		else if(Now_Connection>=Max_Connection)
 		{
 			if(sendmessage(sClient,code_406)<0)
 			{
@@ -80,7 +81,9 @@ void start_run(SOCKET slisten)
 			free_safe(socketcontent);
 			continue;
 		}
+		pthread_mutex_lock(&connection_mutex);
 		Now_Connection++;
+		pthread_mutex_unlock(&connection_mutex);
 		socketcontent->sClient=sClient;
 		socketcontent->nAddrlen=nAddrlen;
 		socketcontent->remoteAddr=remoteAddr;
@@ -102,7 +105,6 @@ void recevice(SocketContent* sc)
 		printf("memory malloc error!\n");
 		closesocket(sc->sClient);
 		free_safe(sc);
-		Now_Connection--;
 		return;
 	}
 	revData->next=NULL;
@@ -133,7 +135,9 @@ void recevice(SocketContent* sc)
 					printf("memory malloc error!\n");
 					closesocket(sc->sClient);
 					free_safe(sc);
+					pthread_mutex_lock(&connection_mutex);
 					Now_Connection--;
+					pthread_mutex_unlock(&connection_mutex);
 					return;
 				}
 				revData->next=NULL;
@@ -147,7 +151,9 @@ void recevice(SocketContent* sc)
 					printf("memory malloc error!\n");
 					closesocket(sc->sClient);
 					free_safe(sc);
+					pthread_mutex_lock(&connection_mutex);
 					Now_Connection--;
+					pthread_mutex_unlock(&connection_mutex);
 					return;
 				}
 				temp=temp->next;
@@ -177,7 +183,9 @@ void recevice(SocketContent* sc)
 					printf("memory malloc error!");
 					closesocket(sc->sClient);
 					free_safe(sc);
+					pthread_mutex_lock(&connection_mutex);
 					Now_Connection--;
+					pthread_mutex_unlock(&connection_mutex);
 					return;
 				}
 				revData->next=NULL;
@@ -197,7 +205,9 @@ void recevice(SocketContent* sc)
 		else
 		{
 			printf("¶Ï¿ªÁ¬½Ó£º%s \r\n", inet_ntoa(sc->remoteAddr.sin_addr));
+			pthread_mutex_lock(&connection_mutex);
 			Now_Connection--;
+			pthread_mutex_unlock(&connection_mutex);
 			return;
 		}
 	}

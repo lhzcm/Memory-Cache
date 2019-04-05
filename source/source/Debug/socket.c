@@ -13,12 +13,8 @@ int connection_init()
 	WSADATA wsaData;
 	SOCKET slisten;
 	struct sockaddr_in sin;
-	SOCKET sClient;
 	struct sockaddr_in remoteAddr;
-	int nAddrlen;
-	pthread_t tid;
 	SocketContent* socketcontent;
-	sem_init(&sem,0,threadnum);
 	if (WSAStartup(sockVersion, &wsaData) != 0)
 	{
 		return -1;

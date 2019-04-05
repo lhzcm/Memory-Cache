@@ -25,13 +25,12 @@ const long converint[]={
 };
 const int numbers[]={0,1,2,3,4,5,6,7,8,9};
 static pthread_mutex_t datatree_mutex=PTHREAD_MUTEX_INITIALIZER;
-sem_t sem;
-int threadnum;
 //extern pthread_mutex_t malloc_free_mutex; //malloc mutex
 //extern pthread_mutex_t free_mutex; //free mutex
+extern time_t session_time;
 
 
-Code code_inniti(unsigned short codeno,unsigned int key,char* data,char* msg)
+Code code_init(unsigned short codeno,unsigned int key,char* data,char* msg)
 {
 	Code code;
 	code.code=codeno;
@@ -183,6 +182,25 @@ void free_RevData(RevData* data)
 		data=temp;
 	}
 }
+int time_check(dataTree* node)
+{
+	time_t now=time(NULL);
+	int errorcode;
+	if(node->expire==0||node->expire>=now)
+	{
+		if(node->expire<session_time+now)
+			node->expire=now+session_time;
+		return 0;
+	}
+	else
+	{
+		pthread_mutex_lock(&datatree_mutex); //添加线程锁
+		data_tree=delete_by_key(data_tree,node->key,&errorcode);
+		pthread_mutex_unlock(&datatree_mutex);
+		return -1;
+	}
+}
+
 Code insert_data(RevData* data)
 {
 	char* chardata;
@@ -201,6 +219,11 @@ Code insert_data(RevData* data)
 	//{
 		//sem_wait(&sem);
 	//}
+	if(extime>0)
+	{
+		nowtime=time(NULL);
+		extime+=nowtime;
+	}
 	node=create_node(count_node,NULL,NULL,chardata,extime);
 	if(node==NULL)
 	{
@@ -209,11 +232,6 @@ Code insert_data(RevData* data)
 			//sem_post(&sem);
 		//}
 		return code_501;
-	}
-	if(extime>0)
-	{
-		nowtime=time(&nowtime);
-		extime+=nowtime;
 	}
 	data_tree=insert_by_node(data_tree,node);
 	count_node++;
@@ -225,7 +243,7 @@ Code insert_data(RevData* data)
 	//}
 	free_RevData(data);
 	
-	return code_inniti(200,count_node,NULL,"insert successful!");//添加成功
+	return code_init(200,count_node,NULL,"insert successful!");//添加成功
 }
 Code get_data(RevData* commdata)
 {
@@ -239,13 +257,13 @@ Code get_data(RevData* commdata)
 	//sem_wait(&sem);
 	node=get_by_key(data_tree,key);
 	//sem_post(&sem);
-	if(node==NULL)
+	if(node==NULL||time_check(node)<0)
 	{
 		printf("%d=404\n",key);
 		return code_404;
 	}
 	free_RevData(commdata);
-	return code_inniti(200,key,node->data,"get data successful!");//成功查找到数据
+	return code_init(200,key,node->data,"get data successful!");//成功查找到数据
 }
 Code delete_data(RevData* commdata)
 {
@@ -264,7 +282,7 @@ Code delete_data(RevData* commdata)
 		return code_405;
 	}
 	free_RevData(commdata);
-	return code_inniti(200,key,NULL,"delete data successful!");//成功删除数据
+	return code_init(200,key,NULL,"delete data successful!");//成功删除数据
 }
 Code updata_time(RevData* commdata)
 {
@@ -292,7 +310,7 @@ Code updata_time(RevData* commdata)
 	}
 	node->expire=extime;
 	free_RevData(commdata);
-	return code_inniti(200,key,NULL,"update time successful");//成功更新时间
+	return code_init(200,key,NULL,"update time successful");//成功更新时间
 }
 Code updata_data(RevData* commdata)
 {
@@ -314,7 +332,7 @@ Code updata_data(RevData* commdata)
 	}
 	node->data=chardata;
 	free_RevData(commdata);
-	return code_inniti(200,key,NULL,"update data successful");//成功更新数据
+	return code_init(200,key,NULL,"update data successful");//成功更新数据
 }
 
 Code updata_all(RevData* commdata)
@@ -348,5 +366,5 @@ Code updata_all(RevData* commdata)
 	node->data=chardata;
 	node->expire=extime;
 	free_RevData(commdata);
-	return code_inniti(200,key,NULL,"update data successful");//更新时间和数据
+	return code_init(200,key,NULL,"update data successful");//更新时间和数据
 }
